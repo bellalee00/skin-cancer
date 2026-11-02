@@ -9,27 +9,6 @@
 
 A web-based skin cancer prediction application and RESTful API powered by **TensorFlow.js** and **Hapi.js**. The application processes uploaded dermatological skin lesion images to predict potential cancer risks, loads trained deep learning models directly from **Google Cloud Storage**, and automatically records all prediction results into **Google Cloud Firestore**.
 
----
-
-## 📌 Table of Contents
-
-- [Overview](#-overview)
-- [Preview & Architecture](#-preview--architecture)
-- [Tech Stack & Cloud Infrastructure](#-tech-stack--cloud-infrastructure)
-- [Key Features](#-key-features)
-- [System Workflow](#-system-workflow)
-- [Project Structure](#-project-structure)
-- [API Documentation](#-api-documentation)
-- [Getting Started](#-getting-started)
-  - [Prerequisites](#prerequisites)
-  - [Installation](#installation)
-  - [Environment Variables](#environment-variables)
-  - [Running the Server](#running-the-server)
-- [Deployment Guide](#-deployment-guide)
-  - [Google Compute Engine](#1-google-compute-engine)
-  - [Google App Engine / Cloud Run](#2-google-app-engine--cloud-run)
-- [Security Considerations](#-security-considerations)
-- [Author](#-author)
 
 ---
 
@@ -41,44 +20,8 @@ Aplikasi ini dikembangkan untuk mengidentifikasi indikasi risiko kanker kulit se
 
 ## 🖼 Preview & Architecture
 
-> [!NOTE]
-> Letakkan tangkapan layar hasil pengujian (Postman / Web UI / Arsitektur GCP) di folder `assets/preview.png`.
+![Skin Cancer Detection Preview](/project-2-skin-cancer.png)
 
-![Skin Cancer Detection Preview](assets/preview.png)
-
-```mermaid
-flowchart TD
-    subgraph Client["📱 Client / Frontend"]
-        A["User / Postman"] -- "POST /predict (multipart/form-data)" --> B["Skin Image (JPEG max 1MB)"]
-    end
-
-    subgraph GCP["☁️ Google Cloud Platform"]
-        subgraph Server["🖥️ Web Server (Compute Engine / App Engine)"]
-            C["Hapi.js Server (Port 3000)"]
-            D["Payload Validation (1MB Limit)"]
-            E["Image Preprocessing (224x224)"]
-            F["tf.node Inference Engine"]
-        end
-
-        subgraph Storage["📦 Cloud Storage Bucket"]
-            G[("Trained Model (model.json & weights)")]
-        end
-
-        subgraph DB["🔥 Cloud Firestore"]
-            H[("Collection: predictions")]
-        end
-    end
-
-    B --> C
-    C --> D
-    D --> E
-    G -. "tf.loadGraphModel(MODEL_URL)" .-> F
-    E --> F
-    F -- "Store Prediction Data" --> H
-    F -- "JSON Response (201 Created)" --> A
-```
-
----
 
 ## 🚀 Tech Stack & Cloud Infrastructure
 
@@ -130,52 +73,6 @@ ml-web-server-main/
 
 ---
 
-## 📡 API Documentation
-
-### 1. Predict Skin Cancer
-
-Memproses gambar lesi kulit dan mengembalikan hasil klasifikasi kanker serta rekomendasi medis.
-
-- **Endpoint**: `POST /predict`
-- **Content-Type**: `multipart/form-data`
-- **Payload Limit**: `1.000.000 bytes` (1 MB)
-
-#### Request Body (Multipart Form)
-| Field | Tipe | Wajib | Keterangan |
-| :--- | :--- | :--- | :--- |
-| `image` | `File (Binary)` | Ya | Gambar lesi kulit (format `.jpg` atau `.jpeg`) |
-
-#### Contoh Response Sukses (`201 Created`)
-```json
-{
-  "status": "success",
-  "message": "Model is predicted successfully",
-  "data": {
-    "id": "e7b0c3a2-1b88-466d-9273-df26743841e2",
-    "result": "Cancer",
-    "suggestion": "Segera periksa ke dokter!",
-    "createdAt": "2026-11-02T10:45:12.345Z"
-  }
-}
-```
-
-#### Contoh Response Gagal - Ukuran File Melebihi Batas (`413 Payload Too Large`)
-```json
-{
-  "status": "fail",
-  "message": "Payload content length greater than maximum allowed: 1000000"
-}
-```
-
-#### Contoh Response Gagal - Format Tidak Valid (`400 Bad Request`)
-```json
-{
-  "status": "fail",
-  "message": "Terjadi kesalahan dalam melakukan prediksi"
-}
-```
-
----
 
 ## 🛠 Getting Started
 
@@ -231,44 +128,7 @@ Server akan berjalan di `http://0.0.0.0:3000` (atau port sesuai variabel `PORT`)
 
 ---
 
-## ☁️ Deployment Guide
 
-### 1. Google Compute Engine
-1. Buat instance VM baru di Google Cloud Console (OS Ubuntu 20.04/22.04 LTS).
-2. Konfigurasikan firewall agar membuka port HTTP (80) atau port aplikasi (3000/8080).
-3. Sambungkan ke VM melalui SSH, kemudian instal Node.js dan build-essential:
-   ```bash
-   curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-   sudo apt-get install -y nodejs build-essential
-   ```
-4. Clone repositori ke VM, konfigurasikan file `.env`, lalu jalankan menggunakan process manager (misal `pm2`):
-   ```bash
-   sudo npm install -g pm2
-   npm install
-   pm2 start src/server/server.js --name ml-api
-   ```
-
-### 2. Google App Engine / Cloud Run
-Jika menggunakan **App Engine**, buat berkas `app.yaml`:
-```yaml
-runtime: nodejs20
-instance_class: F2
-env_variables:
-  MODEL_URL: "https://storage.googleapis.com/<nama-bucket-anda>/model.json"
-  PROJECT_ID: "<gcp-project-id-anda>"
-```
-Lalu jalankan perintah deploy:
-```bash
-gcloud app deploy
-```
-
----
-
-## 🔒 Security Considerations
-
-1. **Sanitasi Kredensial**: Repositori ini dilengkapi `.gitignore` untuk mencegah berkas rahasia seperti `serviceAccountKey.json`, `.env`, dan `node_modules` masuk ke version control.
-2. **Payload Protection**: Hapi payload parser membatasi ukuran unggahan tepat di `1 MB` untuk mencegah potensi serangan Denial of Service (DoS) melalui pengiriman berkas citra berukuran besar.
-3. **Decoupled Architecture**: URL model dan ID proyek Cloud Firestore tidak di-hardcode kaku, melainkan menggunakan environment variable.
 
 ---
 
